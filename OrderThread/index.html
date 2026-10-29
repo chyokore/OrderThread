@@ -1,0 +1,301 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OrderThread</title><style>.catalogue-table{overflow:auto;max-height:420px}.catalogue-match{border:1px solid #dfe8e1;border-radius:8px;padding:12px;margin-top:12px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #dfe8e1}fieldset{border:0;padding:0;margin:0}.tracking-quantity{width:110px;padding:8px;font:inherit}.image-field{display:block;box-sizing:border-box;width:100%;padding:8px;font:inherit;margin:6px 0}.source-image{max-width:100%;max-height:420px;object-fit:contain}body{margin:0;background:#f6f7f4;color:#202b27;font:16px system-ui}main{max-width:1050px;margin:auto;padding:32px 20px}h1{font-size:36px;margin:0}h2{font-size:19px}p{line-height:1.5;color:#596860}.tag{color:#087956;font-weight:700}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:white;border:1px solid #dfe8e1;border-radius:16px;padding:22px}textarea{box-sizing:border-box;width:100%;min-height:165px;padding:12px;border:1px solid #cbd7cf;border-radius:8px;font:inherit}button{background:#087956;color:white;border:0;border-radius:8px;padding:12px 17px;font-weight:700;cursor:pointer}button:disabled{opacity:.5}select{box-sizing:border-box;padding:10px;width:100%;margin:10px 0;font:inherit}blockquote{margin:8px 0;padding:10px;border-left:3px solid #087956;background:#f5f8f5;overflow-wrap:anywhere}.notice{background:#fff4db;padding:12px;border-radius:8px}.entry,.item{border-top:1px solid #e4eae5;padding:12px 0}.small{font-size:14px;color:#596860}header{margin-bottom:24px}.grid{margin-top:18px}.item strong{font-size:18px}.item{overflow-wrap:anywhere}button:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #cf9b28;outline-offset:3px}#error{color:#a02a2a}@media(max-width:700px){.grid{grid-template-columns:1fr}}</style><main><header><span class="tag">ORDERTHREAD · EARLY PROTOTYPE</span><h1>Keep every order clear.</h1><p>Turn changing conversations into proposals you can review, with the original message close by.</p></header><div id="status" class="notice"></div><div class="grid"><section class="card"><h2>1. Add text, an image or a voice note</h2><p>Use synthetic or anonymised sources. Your chosen source is sent to the selected AI provider for extraction. Text requests also include confirmed history.</p><label for="aiProvider">AI provider for this extraction</label><select id="aiProvider" aria-describedby="providerInfo"></select><p id="providerInfo" class="small" aria-live="polite"></p><label for="sourceMode">Source</label><select id="sourceMode"><option value="text">Conversation text</option><option value="image">Order-list image</option><option value="audio">Voice note</option></select>
+<div id="imageIntake" hidden><label for="orderImage">Upload an order-list image</label><input id="orderImage" type="file" accept="image/png,image/jpeg"><p class="small">PNG or JPEG, at most 5 MiB and 20 million pixels. Uploaded images are sent to the selected provider when you click Review image. Nothing is applied automatically.</p><img id="imagePreview" alt="Uploaded order list for human review" hidden style="max-width:100%;max-height:600px;object-fit:contain"></div>
+<div id="audioIntake" hidden><h3>Record a voice note</h3><p>Recording stays in this browser until you click Review voice note. Limit: 60 seconds and 5 MiB.</p><p><button id="startRecording" type="button">Start recording</button> <button id="stopRecording" type="button" disabled>Stop recording</button> <button id="discardRecording" type="button" disabled>Discard recording</button></p><p id="recordingStatus" role="status" aria-live="polite"></p><label for="voiceNote">Or upload a short voice note</label><input id="voiceNote" type="file" accept=".wav,.m4a,.aac,.mp3,.mpeg,.ogg,.oga,.opus,.flac,.webm,audio/*,video/webm"><p>WAV, M4A/AAC, MP3, OGG/Opus, FLAC or WebM, up to 60 seconds and 5 MiB. Phone recordings are checked and converted locally before transcription. Choose Baseten. Audio is sent for AI transcription when you click Review voice note. Nothing is saved until confirmation.</p><audio id="audioPreview" controls hidden></audio></div><div id="textIntake"><label for="message">Customer message</label><textarea id="message" placeholder="Example: Please send 10 blue zips, size 20cm."></textarea></div><p><button id="analyse">Review message</button> <button id="sample" style="background:#e9f3ed;color:#185d43">Use example</button></p><div id="error" role="alert"></div></section><section class="card"><h2>2. Review each item</h2><p>Review the evidence and confirm what each item means. Ask the customer when you are unsure.</p><div id="proposal">No proposal yet.</div><div id="confirmArea" hidden><div id="imageReviewCheck" hidden><label><input id="imageReviewed" type="checkbox"> I compared every item with the image and verified or corrected all uncertain details.</label></div><button id="confirm">Save reviewed decisions</button><p class="small">First save the review, then select an order and confirm its changes below.</p></div></section></div><section id="catalogue" class="card" style="margin-top:18px"><h2>Product catalogue</h2><p>Import product definitions for optional review references. This catalogue does not show stock availability or change order quantities.</p><p><a href="/sample-catalogue.csv" download="sample-catalogue.csv">Download a small synthetic sample CSV</a></p><fieldset id="catalogueImportFields"><label for="catalogueCsv">Upload catalogue CSV</label><input id="catalogueCsv" type="file" accept=".csv,text/csv"><p class="small">UTF-8 CSV with a header row; up to 256 KiB, 1,000 rows and 30 columns. Variant and unit may be omitted. Imports append products; duplicate product/variant/unit rows block the entire import.</p><p><button id="previewCatalogue" type="button">Preview CSV</button></p><div id="catalogueRaw"></div><div id="catalogueMapping" hidden><label for="catalogueName">Product name column (required)</label><select id="catalogueName"></select><label for="catalogueVariant">Variant column (optional)</label><select id="catalogueVariant"></select><label for="catalogueUnit">Unit column (optional)</label><select id="catalogueUnit"></select><p><button id="mapCatalogue" type="button">Review mapped rows</button></p></div><div id="catalogueMapped"></div><label><input id="catalogueConfirm" type="checkbox"> I reviewed the mapped rows and confirm importing these products. No order or stock changes are implied.</label></fieldset><p><button id="importCatalogue" type="button" disabled>Import confirmed catalogue</button></p><div id="catalogueResult" role="status" aria-live="polite"></div><h3>Search local products</h3><label for="catalogueSearch">Search product name, variant or unit</label><input id="catalogueSearch" type="search" maxlength="200"><p id="catalogueCount" class="small"></p><div id="catalogueList">Catalogue loading…</div></section><section class="card" style="margin-top:18px"><h2>3. Apply a saved review</h2>
+<p>Choose a saved review and target order. Repeat only leaves quantities unchanged. Replacement sets the selected line to the reviewed item and quantity.</p>
+<label for="savedReview">Saved review</label><select id="savedReview"></select>
+<p id="reviewHelp" class="notice"></p><button id="reviewAgain" hidden>Review this historical message again</button>
+<label for="targetOrder">Target order</label><select id="targetOrder"></select>
+<label for="orderName">Name for a new order</label><input id="orderName" maxlength="120">
+<button id="refreshComparison" type="button">Refresh order comparison</button><div id="targets"></div><p id="applySummary" aria-live="polite"></p>
+<label><input type="checkbox" id="humanConfirm"> I checked these decisions and targets and confirm applying them.</label>
+<p><button id="apply">Apply confirmed changes</button></p><div id="applyResult" role="status" aria-live="polite" tabindex="-1"></div>
+</section><section class="card" style="margin-top:18px"><h2>Attach a reviewed source to an order</h2><p>Link a saved text, image or voice-note review to one existing order. Attaching preserves the source and item decisions; it does not apply items, change quantities or record dispatch/receipt.</p><fieldset id="attachmentFields"><label for="attachmentReview">Reviewed source</label><select id="attachmentReview"></select><label for="attachmentOrder">Existing target order</label><select id="attachmentOrder"></select><div id="attachmentPreview"></div><label><input id="attachmentConfirm" type="checkbox"> I checked the source and selected order and confirm attaching this review without changing quantities.</label></fieldset><p><button id="attachReview">Attach reviewed source</button></p><div id="attachmentResult" role="status" aria-live="polite" tabindex="-1"></div></section><section class="card" style="margin-top:18px"><h2>Orders</h2><div id="orders"></div></section>
+<section class="card" style="margin-top:18px"><h2>Record dispatch or receipt</h2>
+<p>Enter quantities for the lines affected by this action. Leave other lines blank. Receipt records goods already dispatched.</p>
+<fieldset id="trackingFields"><label for="trackingOrder">Order</label><select id="trackingOrder"></select>
+<label for="trackingKind">Action</label><select id="trackingKind"><option value="dispatch">Dispatch</option><option value="receipt">Receipt</option></select>
+<div id="trackingLines"></div><label><input type="checkbox" id="trackingConfirm"> I checked the order, action and quantities and confirm this record.</label></fieldset>
+<p><button id="recordTracking">Record confirmed quantities</button></p><div id="trackingResult" role="status" aria-live="polite" tabindex="-1"></div>
+</section><section class="card" style="margin-top:18px"><h2>Confirmed history</h2><p>Decisions saved on this computer.</p><div id="history">Loading…</div></section></main><script src="/recorder.js"></script><script src="/catalogue.js"></script><script>
+const $=id=>document.getElementById(id);
+let proposal=null,reviewedMessage='',submissionId=null,sourceGeneration=0,aiProviders=[],reviewBusy=false,catalogueUI=null;
+const names={new:'New order item',add:'Add this item',repeat:'Repeat only — do not add',replace:'Replace an earlier item'};
+function esc(x){const d=document.createElement('div');d.textContent=x??'';return d.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function imageCitation(record){if(record.source_type==='audio')return `<p><strong>Source: uploaded audio · AI-generated transcript, human reviewed</strong></p><blockquote>${esc(record.transcript||record.message)}</blockquote><p>Reviewed fulfilment instructions: ${esc(record.fulfillment_note)}</p>`;return record.source_type==='image'&&record.source_id?`<figure><img class="source-image" src="/api/images/${encodeURIComponent(record.source_id)}" alt="Original uploaded order-list image"><figcaption>Source: uploaded image. Extracted details require human verification; no exact text quotation is claimed.</figcaption></figure>`:''}
+async function call(url,data){const r=await fetch(url,data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{});const j=await r.json();if(!r.ok)throw Error(j.error);return j}
+function reset(){proposal=null;reviewedMessage='';$('proposal').textContent='No proposal yet.';$('confirmArea').hidden=true;$('imageReviewed').checked=false}
+function invalidateSource(){sourceGeneration++;reset()}
+async function refresh(){
+ const status=await call('/api/status');updateProviders(status);
+ const history=await call('/api/events');await refreshOrders(history);
+ $('history').innerHTML=history.length?history.reverse().map(e=>`<div class="entry"><span class="small">${esc(e.created)} UTC · ${esc(e.kind==='order_review_attached'?'Review attachment confirmed':e.kind==='order_applied'?'Applied to order':'Reviewed decision')}</span><blockquote>${esc(e.data.message||(e.kind==='order_review_attached'?'Review #'+e.data.review_id+' explicitly attached to order '+(orderList.find(o=>o.id===e.data.order_id)?.name||e.data.order_id):''))}</blockquote>${imageCitation(e.data)}${(e.data.items||[]).map(i=>`<div>${esc(i.quantity)} × ${esc(i.name)} ${esc(i.variant||'')} — <strong>${esc(names[i.decision]||names[e.data.decision]||e.data.decision||'Recorded')}</strong>${catalogueReference(i)}</div>`).join('')}</div>`).join(''):'No confirmed proposals yet.';
+}
+function updateProviders(status){
+ aiProviders=status.providers||[];
+ const previous=$('aiProvider').value;
+ $('aiProvider').innerHTML='<option value="">Choose AI provider...</option>'+aiProviders.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}${p.configured?'':' (setup required)'}</option>`).join('');
+ $('aiProvider').value=previous||status.default_provider;
+ showProvider();
+ if(status.error)$('status').textContent=status.error;
+}
+function showProvider(){
+ const provider=aiProviders.find(p=>p.id===$('aiProvider').value);
+ if(!provider){$('status').textContent='Select an AI provider.';$('providerInfo').textContent='';return}
+ $('status').textContent=provider.error|| (provider.configured?'AI configured. '+provider.name+' selected. Review every proposal before saving.':provider.name+' setup required: add '+provider.key_name+' privately to .env.local and restart.');
+ $('providerInfo').textContent=provider.error||provider.name+' · '+provider.model+' · '+(provider.id==='baseten'?'Text, image and voice-note audio':'Text and image')+' input → text proposals. Credentials remain on the server. Account model access has not been live-verified.';
+}
+$('aiProvider').onchange=()=>{invalidateSource();showProvider()};
+$('sourceMode').onchange=()=>{if($('sourceMode').value!=='audio'&&['requesting','recording','stopping'].includes(voiceRecorder.state))voiceRecorder.discard('Recording cancelled when source changed.');$('audioIntake').hidden=$('sourceMode').value!=='audio';invalidateSource();const image=$('sourceMode').value==='image';$('textIntake').hidden=$('sourceMode').value!=='text';$('imageIntake').hidden=!image;$('sample').hidden=$('sourceMode').value!=='text';$('analyse').textContent=$('sourceMode').value==='audio'?'Review voice note':image?'Review image':'Review message';$('analyse').disabled=reviewBusy||($('sourceMode').value==='audio'&&['requesting','recording','stopping'].includes(voiceRecorder.state))};
+$('orderImage').onchange=()=>{invalidateSource();$('imagePreview').hidden=true;$('imagePreview').removeAttribute('src');$('error').textContent='';const file=$('orderImage').files[0];if(!file)return;try{validateFile(file)}catch(e){$('error').textContent=e.message;return}const generation=sourceGeneration;const reader=new FileReader();reader.onload=()=>{if(generation===sourceGeneration){$('imagePreview').src=reader.result;$('imagePreview').hidden=false}};reader.readAsDataURL(file)};
+function validateFile(file){if(!['image/png','image/jpeg'].includes(file.type))throw Error('Upload a PNG or JPEG image.');if(!file.size||file.size>5*1024*1024)throw Error('Image must be nonempty and at most 5 MiB.')}
+$('sample').onclick=()=>{$('message').value='Please send 10 blue zips, size 20cm.';invalidateSource()};
+$('message').addEventListener('input',invalidateSource);
+let audioPreviewURL=null,audioFile=null;
+function previewAudio(file){
+ audioFile=file;if(audioPreviewURL)URL.revokeObjectURL(audioPreviewURL);audioPreviewURL=null;
+ $('audioPreview').pause();$('audioPreview').hidden=true;$('audioPreview').removeAttribute('src');$('audioPreview').load();
+ if(file){audioPreviewURL=URL.createObjectURL(file);$('audioPreview').src=audioPreviewURL;$('audioPreview').hidden=false}
+}
+const voiceRecorder=typeof window.OrderThreadVoiceRecorder==='function'?new window.OrderThreadVoiceRecorder({
+ onInvalidate:()=>{invalidateSource();$('voiceNote').value='';$('error').textContent=''},
+ onFile:previewAudio,
+ onState:({state,message})=>{
+  $('recordingStatus').textContent=message;
+  const busy=['requesting','recording','stopping'].includes(state);
+  $('startRecording').disabled=busy||!!voiceRecorder.support();$('startRecording').textContent=state==='ready'?'Re-record':'Start recording';
+  $('stopRecording').disabled=state!=='recording';$('discardRecording').disabled=!busy&&state!=='ready';$('voiceNote').disabled=busy;
+  $('analyse').disabled=reviewBusy||($('sourceMode').value==='audio'&&busy);
+ }
+}):{
+ state:'unavailable',
+ support:()=> 'Recorder controls did not load. Stop the old OrderThread server, restart the app once, then hard-refresh this page (Ctrl+Shift+R). File upload is still available.',
+ discard(){invalidateSource();$('voiceNote').value='';$('error').textContent='';previewAudio(null)},
+ start(){},stop(){}
+};
+$('recordingStatus').textContent=voiceRecorder.support()||'Ready to record. Your browser will ask for microphone permission.';
+$('startRecording').disabled=!!voiceRecorder.support();
+$('startRecording').onclick=()=>voiceRecorder.start();
+$('stopRecording').onclick=()=>voiceRecorder.stop();
+$('discardRecording').onclick=()=>voiceRecorder.discard();
+$('voiceNote').onchange=()=>{
+ const file=$('voiceNote').files[0];voiceRecorder.discard('Using file upload. You can also start a new recording.');
+ try{if(file){validateAudioFile(file);previewAudio(file)}}catch(e){$('error').textContent=e.message}
+};
+window.addEventListener('pagehide',()=>voiceRecorder.discard());
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&voiceRecorder.state==='recording')voiceRecorder.stop('Recording stopped because this page was hidden.')});
+
+function validateAudioFile(file){if(!/\.(wav|m4a|aac|mp3|mpeg|ogg|oga|opus|flac|webm)$/i.test(file.name))throw Error('Choose WAV, M4A/AAC, MP3, OGG/Opus, FLAC or WebM audio.');if(!file.size||file.size>5*1024*1024)throw Error('Voice note must be nonempty and at most 5 MiB.')}
+function renderAudioProposal(){
+ $('proposal').innerHTML=`<p><strong>Source: uploaded audio</strong></p>${(proposal.audio_details?.warnings||[]).map(w=>`<p class="notice">${esc(w)}</p>`).join('')}<label for="transcript">AI-generated transcript — check and correct</label><textarea id="transcript">${esc(proposal.transcript)}</textarea><label for="audioNote">Extracted fulfilment instructions — check and correct</label><textarea id="audioNote">${esc(proposal.fulfillment_note)}</textarea>${proposal.clarification?`<p class="notice">Clarification needed: ${esc(proposal.clarification)}</p><label><input type="checkbox" id="clarified"> I clarified uncertain details with the customer.</label>`:''}${proposal.items.map((i,n)=>`<div class="item"><p>${esc(i.uncertainty||'Verify this AI-extracted item against the recording.')}</p><label>Item name<input class="image-field" id="audioName${n}" value="${esc(i.name)}"></label><label>Quantity<input class="image-field" id="audioQty${n}" type="number" min="1" step="1" value="${esc(i.quantity)}"></label><label>Variant<input class="image-field" id="audioVariant${n}" value="${esc(i.variant)}"></label><label>Decision<select id="choice${n}"><option value="">Choose after checking...</option>${Object.entries(names).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}</select></label></div>`).join('')||'<p>Instructions only — no items or quantities required. Saving records instructions in history; no order or dispatch changes.</p>'}<label><input id="audioReviewed" type="checkbox"> I checked the recording, corrected the transcript and extracted details, and confirm saving this review.</label>`;
+ $('confirmArea').hidden=false;$('imageReviewCheck').hidden=true;
+ $('proposal').querySelectorAll('textarea,input,select').forEach(input=>{if(input.id!=='audioReviewed')input.addEventListener('input',()=>{$('audioReviewed').checked=false;submissionId=crypto.randomUUID()})});
+ catalogueUI?.suggest();
+}
+function renderProposal(){
+ if(proposal.source_type==='audio'){renderAudioProposal();return}
+
+ const image=proposal.source_type==='image';
+ const clarification=proposal.clarification?`<div class="notice"><strong>Clarification needed</strong><p>${esc(proposal.clarification)}</p></div>`:'';
+ const items=proposal.items.map((item,n)=>`<div class="item">${image?`<strong>Proposed image item ${n+1}</strong><p class="notice">${item.uncertain?'Uncertain or unreadable: '+esc(item.uncertainty):'AI-extracted detail — verify against the image.'}</p><label for="itemName${n}">Item name</label><input class="image-field" id="itemName${n}" value="${esc(item.name)}"><label for="itemQty${n}">Quantity (required)</label><input class="image-field" type="number" min="1" step="1" id="itemQty${n}" value="${esc(item.quantity)}"><label for="itemVariant${n}">Variant</label><input class="image-field" id="itemVariant${n}" value="${esc(item.variant)}"><p class="small">Source: uploaded image, proposed item ${n+1}. This is an image citation, not an exact text quotation.</p>`:`<strong>${esc(item.quantity??'Quantity missing')} × ${esc(item.name||'Item missing')}</strong><div>${esc(item.variant||'No variant specified')}</div><div class="small">Source from message:</div><blockquote>${esc(item.evidence||'No verified quote — review again')}</blockquote>`}<label for="choice${n}">What does this item mean?</label><select id="choice${n}"><option value="">Choose after checking...</option><option value="new">New order item</option><option value="add">Add this item</option><option value="repeat">Repeat only — do not add</option><option value="replace">Replace an earlier item</option></select></div>`).join('');
+ const note=proposal.fulfillment_note?`<div class="notice"><strong>Fulfillment note</strong><p>${esc(proposal.fulfillment_note)}</p></div>`:'';
+ $('proposal').innerHTML=clarification+note+(items||'<p>No readable items found. Upload a clearer image or try another message.</p>');
+ $('confirmArea').hidden=!proposal.items.length;$('imageReviewCheck').hidden=!image;
+ $('proposal').querySelectorAll('input,select').forEach(input=>input.addEventListener('input',()=>{$('imageReviewed').checked=false;submissionId=crypto.randomUUID()}));
+ catalogueUI?.suggest();
+}
+$('analyse').onclick=async()=>{
+ try{
+  $('error').textContent='';reviewBusy=true;$('analyse').disabled=true;reset();const generation=sourceGeneration;const message=$('message').value;const provider=$('aiProvider').value;if(!provider)throw Error('Select an AI provider.');
+  let result;
+  if($('sourceMode').value==='audio'){
+   if(['requesting','recording','stopping'].includes(voiceRecorder.state))throw Error('Stop recording and wait for playback before review.');const file=audioFile;if(!file)throw Error('Record or choose a voice note first.');validateAudioFile(file);
+   const encoded=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=()=>reject(Error('Voice note could not be read.'));reader.readAsDataURL(file)});
+   result=await call('/api/propose-audio',{provider,audio:{mime:file.type,name:file.name,base64:encoded}});
+  }else if($('sourceMode').value==='image'){
+   const file=$('orderImage').files[0];if(!file)throw Error('Choose an order-list image first.');validateFile(file);
+   const encoded=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=()=>reject(Error('The image could not be read.'));reader.readAsDataURL(file)});
+   result=await call('/api/propose-image',{provider,image:{mime:file.type,base64:encoded}});
+  }else result=await call('/api/propose',{message,provider});
+  if(generation!==sourceGeneration)throw Error('The source changed during review. Please review it again.');
+  proposal=result;reviewedMessage=message;submissionId=crypto.randomUUID();renderProposal();
+ }catch(e){$('error').textContent=e.message}finally{reviewBusy=false;$('analyse').disabled=$('sourceMode').value==='audio'&&['requesting','recording','stopping'].includes(voiceRecorder.state)}
+};
+$('confirm').onclick=async()=>{
+ try{
+  $('error').textContent='';if(!proposal)throw Error('Review the source again.');
+  const audio=proposal.source_type==='audio';const image=proposal.source_type==='image';if(!image&&!audio&&$('message').value!==reviewedMessage)throw Error('Review the current message again.');
+  const decisions=proposal.items.map((_,n)=>$('choice'+n).value);if(decisions.some(x=>!x))throw Error('Choose a decision for every item.');
+  let reviewed=proposal;
+  if(audio){
+   if(!$('audioReviewed').checked)throw Error('Confirm that you checked the recording and corrected the transcript and details.');
+   reviewed={...proposal,transcript:$('transcript').value,fulfillment_note:$('audioNote').value,items:proposal.items.map((i,n)=>({...i,name:$('audioName'+n).value.trim(),quantity:Number($('audioQty'+n).value),variant:$('audioVariant'+n).value.trim()||null}))};
+  }
+  if(image){
+   if(!$('imageReviewed').checked)throw Error('Confirm that you compared all items and uncertain details with the image.');
+   reviewed={...proposal,items:proposal.items.map((item,n)=>({...item,name:$('itemName'+n).value.trim(),quantity:Number($('itemQty'+n).value),variant:$('itemVariant'+n).value.trim()||null}))};
+   if(reviewed.items.some(item=>!item.name||!Number.isSafeInteger(item.quantity)||item.quantity<=0))throw Error('Resolve unreadable details: every item needs a name and positive whole quantity.');
+  }
+  $('confirm').disabled=true;
+  await call('/api/confirm',{message:reviewedMessage,proposal:reviewed,decisions,submission_id:submissionId,...(catalogueUI?{catalogue_choices:catalogueUI.getChoices()}:{}),...(audio?{audio_draft_id:proposal.audio_draft_id,audio_reviewed:true,clarification_resolved:!!$('clarified')?.checked}:{}),...(image?{image_draft_id:proposal.image_draft_id,image_reviewed:true}:{})});
+  reset();$('proposal').textContent='Decisions saved. Attach this reviewed source to a selected order below, or apply item decisions with separate confirmation.';$('message').value='';await refresh();
+ }catch(e){$('error').textContent=e.message}finally{$('confirm').disabled=false}
+};
+let orderList=[], reviewList=[], attachmentReviews=[], attachmentSubmission=null;
+async function refreshOrders(history){
+  orderList=await call('/api/orders');
+  attachmentReviews=history.filter(e=>e.kind==='confirmed_proposal'&&e.data.review_version===2);
+  $('attachmentReview').innerHTML='<option value="">Choose a reviewed source...</option>'+attachmentReviews.map(e=>`<option value="${e.id}">Review #${e.id} · ${esc(e.data.source_type||'text')} · ${esc(e.data.message)}</option>`).join('');
+  $('attachmentOrder').innerHTML='<option value="">Choose an existing order...</option>'+orderList.map(o=>`<option value="${esc(o.id)}">${esc(o.name)} (${esc(o.id.slice(0,8))})</option>`).join('');
+  renderAttachment();
+  const applied=new Set(history.filter(e=>e.kind==='order_applied').map(e=>e.data.review_id));
+  reviewList=history.filter(e=>e.kind==='confirmed_proposal'&&!applied.has(e.id));
+  $('savedReview').innerHTML='<option value="">Choose a saved review…</option>'+reviewList.map(e=>`<option value="${e.id}">${e.data.review_version===2?'Review':'History only — review again'} #${e.id}: ${esc(e.data.message)}</option>`).join('');
+  $('targetOrder').innerHTML='<option value="">Choose an order…</option><option value="__new__">Create a new order</option>'+orderList.map(o=>`<option value="${esc(o.id)}">${esc(o.name)} (${esc(o.id.slice(0,8))})</option>`).join('');
+  $('orders').innerHTML=orderList.map(o=>`<div class="entry"><h3>${esc(o.name)}</h3><div style="overflow-x:auto"><table><thead><tr><th scope="col">Line</th><th scope="col">Ordered</th><th scope="col">Dispatched</th><th scope="col">Outstanding for dispatch</th><th scope="col">Received</th></tr></thead><tbody>${o.items.map(i=>`<tr data-line-id="${esc(i.id)}"><th scope="row">${esc(i.name)} ${esc(i.variant||'')}</th><td>${i.ordered}</td><td>${i.dispatched}</td><td>${i.outstanding_dispatch}</td><td>${i.received}</td></tr>`).join('')}</tbody></table></div>${orderReviewHistory(o)}<h4>Dispatch and receipt history</h4>${o.fulfillment_history.map(a=>`<div class="entry"><strong>${esc(a.kind==='dispatch'?'Dispatch':'Receipt')}</strong> <time>${esc(a.created)} UTC</time>${a.items.map(i=>`<p>${i.quantity} × ${esc(i.name)} ${esc(i.variant||'')}</p>`).join('')}</div>`).join('')||'<p>No dispatch or receipt recorded.</p>'}</div>`).join('')||'No orders yet. Historical decisions have not been converted into orders.';
+  const selectedTracking=$('trackingOrder').value;
+  $('trackingOrder').innerHTML='<option value="">Choose an order...</option>'+orderList.map(o=>`<option value="${esc(o.id)}">${esc(o.name)} (${esc(o.id.slice(0,8))})</option>`).join('');
+  $('trackingOrder').value=selectedTracking;
+  renderTrackingLines();
+  renderTargets();
+}
+function catalogueReference(item){return item.catalogue_reference?`<p class="small">Human-selected catalogue reference: ${esc(item.catalogue_reference.name)} · ${esc(item.catalogue_reference.variant)} · Unit: ${esc(item.catalogue_reference.unit||'not supplied')}. Item details and quantities remain separately reviewed; stock availability is unknown.</p>`:item.catalogue_ignored?'<p class="small">Catalogue matches ignored by the reviewer.</p>':''}
+function reviewedSource(review){
+ const source=review.source_type||'text';
+ return `<p><strong>Source: ${esc(source)}</strong></p>${source==='text'?`<blockquote>${esc(review.message)}</blockquote><p>Reviewed fulfilment instructions: ${esc(review.fulfillment_note||'None')}</p>`:imageCitation(review)+(source==='image'?`<p>Reviewed fulfilment instructions: ${esc(review.fulfillment_note||'None')}</p>`:'')}${(review.items||[]).map(i=>`<p>${esc(i.quantity)} × ${esc(i.name)} ${esc(i.variant||'')} — reviewed decision: ${esc(names[i.decision]||i.decision)} (separate item decision)</p>${catalogueReference(i)}`).join('')}`;
+}
+function orderReviewHistory(order){
+ return `<section class="order-reviews"><h4>Reviewed sources and instructions</h4>${(order.reviews||[]).map(link=>`<article class="entry"><strong>Review #${link.review_id} · ${link.relation==='attached'?'Explicitly attached; quantities unchanged':'Items applied with separate confirmation'}</strong><p class="small">Human reviewed ${esc(link.reviewed_at)} UTC${link.attached_at?' · Attachment confirmed '+esc(link.attached_at)+' UTC':''}</p>${reviewedSource(link.review)}</article>`).join('')||'<p>No reviewed sources linked to this order.</p>'}</section>`;
+}
+function renderAttachment(){
+ attachmentSubmission=null;$('attachmentConfirm').checked=false;$('attachmentResult').textContent='';
+ const review=attachmentReviews.find(e=>String(e.id)===$('attachmentReview').value);
+ const order=orderList.find(o=>o.id===$('attachmentOrder').value);
+ $('attachmentPreview').innerHTML=(review?`<p>Saved review #${review.id} · human reviewed ${esc(review.created)} UTC</p>${reviewedSource(review.data)}`:'')+(order?`<p><strong>Target order: ${esc(order.name)} (${esc(order.id.slice(0,8))})</strong></p>`:'<p>Select an existing order explicitly.</p>');
+}
+$('attachmentReview').onchange=renderAttachment;
+$('attachmentOrder').onchange=renderAttachment;
+$('attachReview').onclick=async()=>{
+ try{
+  $('attachmentResult').style.color='';
+  const review=attachmentReviews.find(e=>String(e.id)===$('attachmentReview').value);
+  const order=orderList.find(o=>o.id===$('attachmentOrder').value);
+  if(!review)throw Error('Select a saved reviewed source.');
+  if(!order)throw Error('Select an existing target order.');
+  if(!$('attachmentConfirm').checked)throw Error('Confirm the reviewed source and selected order before attaching.');
+  if(!attachmentSubmission)attachmentSubmission={submission_id:crypto.randomUUID(),event_id:review.id,order_id:order.id,confirmed:true};
+  $('attachReview').disabled=true;$('attachmentFields').disabled=true;
+  const result=await call('/api/attach-review',attachmentSubmission);
+  const success=result.already_attached?'Already attached. No duplicate link or quantity change.':'Success: reviewed source attached to '+order.name+'. Quantities unchanged.';
+  try{await refresh()}catch{$('attachmentResult').textContent=success+' Reload to refresh the display.';return}
+  $('attachmentResult').textContent=success;
+ }catch(e){$('attachmentResult').style.color='#a02a2a';$('attachmentResult').textContent='Could not attach review: '+e.message;$('attachmentResult').focus()}
+ finally{$('attachReview').disabled=false;$('attachmentFields').disabled=false}
+};
+
+let applyPreview=null,targetGeneration=0;
+function effectiveDecision(item,index){return $('overlap'+index)?$('overlap'+index).value:item.decision}
+function linePicker(item,index,decision,order){
+ return ['add','replace'].includes(decision)?`<label for="line${index}">Explicit target for this ${esc(decision)}</label><select id="line${index}"><option value="">Choose a line…</option>${decision==='add'?'<option value="__new__">Add as a new line in selected order</option>':''}${(order?.items||[]).map(l=>`<option value="${esc(l.id)}">${esc(l.quantity)} × ${esc(l.name)} ${esc(l.variant||'')} (${esc(l.id.slice(0,8))})</option>`).join('')}</select>`:`<p>${decision==='repeat'?'No quantity change.':decision==='new'?'Creates a new line in the selected order.':'Resolve this possible overlap before applying.'}</p>`;
+}
+async function renderTargets(){
+ const generation=++targetGeneration;applyPreview=null;
+ $('humanConfirm').checked=false;$('humanConfirm').disabled=false;$('applyResult').textContent='';
+ const review=reviewList.find(e=>String(e.id)===$('savedReview').value);
+ const order=orderList.find(o=>o.id===$('targetOrder').value);
+ $('orderName').disabled=$('targetOrder').value!=='__new__';
+ const instructionsOnly=review&&review.data.source_type==='audio'&&!review.data.items.length;
+ const legacy=review&&review.data.review_version!==2;
+ $('apply').disabled=!!instructionsOnly;
+ $('reviewHelp').textContent=instructionsOnly?'Instruction-only voice note: use Attach a reviewed source to an order below. Attachment does not change quantities or record dispatch/receipt.':legacy?'This historical review predates orders. It has been preserved unchanged and cannot be applied directly. Review its original message again and save fresh per-item decisions.':'Only unapplied reviews are listed. Applied reviews remain in confirmed history.';
+ $('reviewAgain').hidden=!legacy;
+ $('applySummary').textContent=legacy?'Review this historical message again before applying.':review&&$('targetOrder').value==='__new__'&&review.data.items.some(i=>['add','replace'].includes(i.decision))?'This review contains additions or replacements. Select an existing order; creating a new order requires new-item decisions.':review?'Check each target before confirming.':'';
+ if(review&&order&&!legacy&&!instructionsOnly){
+  $('apply').disabled=true;$('humanConfirm').disabled=true;$('targets').textContent='Checking possible overlaps for '+order.name+'…';
+  try{const preview=await call('/api/apply-preview',{event_id:review.id,order_id:order.id});if(generation!==targetGeneration)return;applyPreview=preview;order.items=preview.lines;$('humanConfirm').checked=false;$('humanConfirm').disabled=false}
+  catch(e){if(generation!==targetGeneration)return;$('targets').textContent='Could not compare this order: '+e.message;return}
+  $('apply').disabled=false;
+ }
+ if(generation!==targetGeneration)return;
+ $('targets').innerHTML=review?imageCitation(review.data)+review.data.items.map((i,n)=>{
+  const overlap=applyPreview?.overlaps.find(match=>match.index===n);
+  return `<div class="item"><strong>${esc(i.quantity)} × ${esc(i.name)} ${esc(i.variant||'')}</strong><p>Saved review decision: ${esc(names[i.decision])}</p>${i.source_type==='image'?'<p class="small">Source: uploaded image, proposed item '+(n+1)+'. Human verified.</p>':`<blockquote>${esc(i.evidence)}</blockquote>`}${overlap?`<div class="notice overlap-warning"><strong>Possible overlap in ${esc(order.name)}</strong><p>Matching details do not establish intent. Is this a repeat, an addition or a replacement?</p><div class="grid"><div><strong>Existing order line(s)</strong>${overlap.existing.map(line=>`<p>${esc(line.quantity)} × ${esc(line.name)} · ${esc(line.variant||'Variant missing')}<br>Line ${esc(line.id.slice(0,8))}</p>`).join('')}</div><div><strong>Proposed from this review</strong><p>${esc(i.quantity)} × ${esc(i.name)} · ${esc(i.variant||'Variant missing')}</p></div></div><label for="overlap${n}">Resolve this item for this order</label><select id="overlap${n}"><option value="">Unresolved — choose explicitly…</option><option value="repeat">Repeat only — quantities unchanged</option><option value="add">Intentional addition</option><option value="replace">Replacement</option></select></div>`:''}<div id="linePicker${n}">${linePicker(i,n,overlap?'':i.decision,order)}</div></div>`;
+ }).join(''):'';
+ if(review)review.data.items.forEach((item,n)=>{
+  const choice=$('overlap'+n);
+  if(choice)choice.onchange=()=>{$('humanConfirm').checked=false;$('linePicker'+n).innerHTML=linePicker(item,n,choice.value,order);const line=$('line'+n);if(line)line.onchange=()=>{$('humanConfirm').checked=false}};
+  const line=$('line'+n);if(line)line.onchange=()=>{$('humanConfirm').checked=false};
+ });
+}
+$('reviewAgain').onclick=()=>{
+  const review=reviewList.find(e=>String(e.id)===$('savedReview').value);
+  if(!review)return;
+  $('sourceMode').value='text';$('sourceMode').onchange();reset();$('message').value=review.data.message||'';
+  $('proposal').textContent='Historical message loaded. Review the message and save fresh per-item decisions; its original history stays unchanged.';
+  $('message').focus();$('message').scrollIntoView({block:'center'});
+};
+$('savedReview').onchange=renderTargets;
+$('targetOrder').onchange=renderTargets;
+$('refreshComparison').onclick=renderTargets;
+$('orderName').oninput=()=>{$('humanConfirm').checked=false};
+$('apply').onclick=async()=>{
+  try{
+    $('error').textContent='';$('applyResult').textContent='';$('applyResult').style.color='';
+    const review=reviewList.find(e=>String(e.id)===$('savedReview').value);
+    if(!review)throw Error('Select a saved review.');
+    if(review.data.review_version!==2)throw Error('This historical review cannot be applied directly. Use “Review this historical message again” first.');
+    if(!$('humanConfirm').checked)throw Error('Check the confirmation box after reviewing targets.');
+    const resolutions={};
+    for(const match of applyPreview?.overlaps||[]){const decision=$('overlap'+match.index).value;if(!decision)throw Error('Resolve every possible overlap: choose repeat, addition or replacement.');resolutions[String(match.index)]=decision}
+    const targets=review.data.items.map((i,n)=>['add','replace'].includes(effectiveDecision(i,n))?$('line'+n).value:null);
+    $('apply').disabled=true;
+    $('applyResult').textContent='Applying confirmed changes…';
+    const result=await call('/api/apply',{event_id:review.id,order_id:$('targetOrder').value,order_name:$('orderName').value,targets,confirmed:true,...(applyPreview?{order_state:applyPreview.state_token,overlap_resolutions:resolutions}:{})});
+    const success=result.already_applied?'This review was already applied. Quantities were not changed again.':'Success: changes applied to the order. Updated quantities are shown below.';
+    try { await refresh(); } catch { $('applyResult').textContent=success+' The display could not refresh. Reload to see the saved order.'; return; }
+    $('applyResult').textContent=success;
+  }catch(e){$('humanConfirm').checked=false;$('applyResult').textContent='Could not apply changes: '+e.message;$('applyResult').style.color='#a02a2a';$('applyResult').focus()}finally{$('apply').disabled=false}
+};
+
+let trackingSubmission=null;
+function invalidateTracking(){trackingSubmission=null;$('trackingConfirm').checked=false;$('trackingResult').textContent=''}
+function renderTrackingLines(){
+  invalidateTracking();
+  const order=orderList.find(o=>o.id===$('trackingOrder').value);
+  $('trackingLines').innerHTML=order?order.items.map((i,n)=>{
+    const remaining=$('trackingKind').value==='dispatch'?i.outstanding_dispatch:i.dispatched-i.received;
+    return `<div class="item"><label for="trackingQty${n}">${esc(i.name)} ${esc(i.variant||'')} — ${remaining} available for ${esc($('trackingKind').value)}</label><br><input class="tracking-quantity" id="trackingQty${n}" data-line="${esc(i.id)}" type="number" min="1" step="1" inputmode="numeric" aria-describedby="trackingHint${n}"><p class="small" id="trackingHint${n}">Ordered ${i.ordered}; dispatched ${i.dispatched}; outstanding for dispatch ${i.outstanding_dispatch}; received ${i.received}.</p></div>`;
+  }).join(''):'';
+  $('trackingLines').querySelectorAll('input').forEach(input=>input.oninput=invalidateTracking);
+}
+$('trackingOrder').onchange=renderTrackingLines;
+$('trackingKind').onchange=renderTrackingLines;
+$('recordTracking').onclick=async()=>{
+  try{
+    $('trackingResult').style.color='';
+    if(!$('trackingConfirm').checked)throw Error('Check confirmation after reviewing the quantities.');
+    const items=Array.from($('trackingLines').querySelectorAll('input')).filter(i=>i.value!=='').map(i=>{
+      const quantity=Number(i.value);
+      if(!Number.isSafeInteger(quantity)||quantity<=0)throw Error('Quantities must be positive whole numbers.');
+      return {line_id:i.dataset.line,quantity};
+    });
+    if(!items.length)throw Error('Enter a quantity for at least one line.');
+    if(!trackingSubmission)trackingSubmission={submission_id:crypto.randomUUID(),order_id:$('trackingOrder').value,kind:$('trackingKind').value,items,confirmed:true};
+    $('recordTracking').disabled=true;$('trackingFields').disabled=true;
+    $('trackingResult').textContent='Recording confirmed quantities...';
+    const result=await call('/api/fulfillment',trackingSubmission);
+    const success=result.already_recorded?'Already recorded. No quantities were recorded twice.':'Success: '+(trackingSubmission.kind==='dispatch'?'dispatch':'receipt')+' recorded.';
+    try{await refresh()}catch{$('trackingResult').textContent=success+' Reload to see updated balances.';return}
+    $('trackingResult').textContent=success;
+  }catch(e){$('trackingResult').style.color='#a02a2a';$('trackingResult').textContent='Could not record quantities: '+e.message;$('trackingResult').focus()}
+  finally{$('recordTracking').disabled=false;$('trackingFields').disabled=false}
+};
+if(typeof window.OrderThreadCatalogue==='function'){
+ catalogueUI=new window.OrderThreadCatalogue({call,esc,$,
+  getProposal:()=>proposal,
+  getItems:()=>proposal?proposal.items.map((item,index)=>({...item,name:$('itemName'+index)?.value??$('audioName'+index)?.value??item.name,variant:$('itemVariant'+index)?.value??$('audioVariant'+index)?.value??item.variant})):[],
+  onChoiceChange:()=>{$('imageReviewed').checked=false;if($('audioReviewed'))$('audioReviewed').checked=false;submissionId=crypto.randomUUID()}
+ });
+ catalogueUI.initialize().catch(()=>{$('catalogueResult').textContent='Catalogue could not load. Restart the updated server and reload. Existing review flows are still available.'});
+}else $('catalogueResult').textContent='Catalogue controls did not load. Restart the updated server and hard-refresh this page.';
+refresh().catch(e=>{$('error').textContent=e.message});
+</script></html>

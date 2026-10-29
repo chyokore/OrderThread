@@ -1,0 +1,26 @@
+const assert=require('node:assert/strict');const path=require('node:path');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+(async()=>{
+console.log('Starting image browser test');const browser=await chromium.launch({headless:true,channel:'msedge',timeout:20000});console.log('Browser launched');const page=await browser.newPage();page.setDefaultTimeout(15000);console.log('Page created');const errors=[];page.on('pageerror',e=>errors.push(e.message));const base='http://127.0.0.1:8877';
+await page.goto(base);await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('AI configured'));
+await page.selectOption('#sourceMode','image');await page.setInputFiles('#orderImage',path.resolve('browser_order_fixture.png'));
+await page.waitForFunction(()=>!document.querySelector('#imagePreview').hidden&&document.querySelector('#imagePreview').naturalWidth>0);
+let pending=page.waitForResponse(r=>r.url().endsWith('/api/propose-image'));await page.click('#analyse');let response=await pending;assert.equal(response.status(),200);
+await page.waitForSelector('#itemQty1');assert.equal(await page.locator('#itemQty1').inputValue(),'');assert.match(await page.locator('#proposal').innerText(),/Quantity unreadable/);assert.match(await page.locator('#proposal').innerText(),/not an exact text quotation/);
+assert.deepEqual(await page.request.get(base+'/api/events').then(r=>r.json()),[]);assert.deepEqual(await page.request.get(base+'/api/orders').then(r=>r.json()),[]);
+await page.selectOption('#choice0','new');await page.selectOption('#choice1','new');await page.click('#confirm');assert.match(await page.locator('#error').innerText(),/compared all items/);
+await page.check('#imageReviewed');await page.click('#confirm');assert.match(await page.locator('#error').innerText(),/Resolve unreadable/);
+await page.fill('#itemQty1','5');assert.equal(await page.locator('#imageReviewed').isChecked(),false);await page.check('#imageReviewed');
+pending=page.waitForResponse(r=>r.url().endsWith('/api/confirm'));await page.click('#confirm');response=await pending;assert.equal(response.status(),200);const saved=await response.json();
+await page.waitForFunction(()=>document.querySelector('#proposal').textContent.includes('Decisions saved'));
+assert.deepEqual(await page.request.get(base+'/api/orders').then(r=>r.json()),[]);
+await page.selectOption('#savedReview',String(saved.event_id));assert.equal(await page.locator('#targets .source-image').count(),1);
+await page.waitForFunction(()=>document.querySelector('#targets .source-image').naturalWidth>0);
+await page.selectOption('#targetOrder','__new__');await page.fill('#orderName','Image browser order');await page.check('#humanConfirm');pending=page.waitForResponse(r=>r.url().endsWith('/api/apply'));await page.click('#apply');response=await pending;assert.equal(response.status(),200);await page.waitForFunction(()=>document.querySelector('#applyResult').textContent.includes('Success:'));
+await page.reload();await page.waitForFunction(()=>document.querySelector('#orders').textContent.includes('Image browser order'));assert.ok(await page.locator('#history .source-image').count()>0);
+const orders=await page.request.get(base+'/api/orders').then(r=>r.json());assert.deepEqual(orders[0].items.map(i=>[i.name,i.quantity]),[['zips',10],['buttons',5]]);
+await page.selectOption('#sourceMode','text');assert.equal(await page.locator('#message').isVisible(),true);await page.route(base+'/api/propose',route=>route.fulfill({json:{items:[{name:'zips',quantity:3,variant:'green',evidence:'3 green zips'}],intent:'new',clarification:'',fulfillment_note:''}}));
+await page.fill('#message','Please send 3 green zips');await page.click('#analyse');await page.waitForSelector('#choice0');assert.match(await page.locator('#proposal blockquote').innerText(),/3 green zips/);await page.selectOption('#choice0','new');pending=page.waitForResponse(r=>r.url().endsWith('/api/confirm'));await page.click('#confirm');response=await pending;assert.equal(response.status(),200);const events=await page.request.get(base+'/api/events').then(r=>r.json());assert.equal(events.filter(e=>e.kind==='confirmed_proposal').length,2);assert.deepEqual(errors,[]);
+console.log('PASS image browser: upload/preview, mocked Baseten response, uncertain missing quantity, no automatic history/order, human correction and confirmation, persisted source image, separate apply confirmation, reload and text-mode recovery. No JavaScript errors.');
+await Promise.race([browser.close(),new Promise(resolve=>setTimeout(resolve,3000))]);process.exit(0);
+})().catch(e=>{console.error(e);process.exit(1)});

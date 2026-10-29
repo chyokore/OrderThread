@@ -1,0 +1,45 @@
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+# Customer data and local databases
+*.db
+*.db-*
+*.sqlite*
+*.wav
+*.mp3
+*.mpeg
+*.m4a
+*.aac
+*.ogg
+*.opus
+*.flac
+*.webm
+*.mp4
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.zip
+uploads/
+recordings/
+data/
+# Generated and machine-specific artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.catalogue-sample/
+*.log
+*preservation*.json
+.publish-*
+# Retained local legacy page and investigation using customer recordings
+/index.html
+/browser_audio_mismatch_test.cjs
+# Historical local notes
+*.local.md
