@@ -43,3 +43,7 @@ node_modules/
 /browser_audio_mismatch_test.cjs
 # Historical local notes
 *.local.md
+
+# Video source files remain local
+*.mov
+*.mkv

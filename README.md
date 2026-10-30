@@ -32,6 +32,20 @@ Uploads and in-app recordings are limited to 60 seconds and 5 MiB. The server va
 
 Transcripts are AI-generated and audio remains identified as the source. Instruction-only notes can be reviewed and attached to an explicitly selected order without inventing items or requiring quantities. Nothing changes automatically.
 
+## Video frame review
+
+Choose **Video frame review** to upload MP4, MOV or WebM video up to 60 seconds, 20 MiB and 4K. H.264 MP4 gives the broadest browser playback support. H.264/H.265, VP8/VP9 and AV1 tracks are validated locally through the existing `imageio-ffmpeg` dependency. No additional hosted video service is used.
+
+Play, pause or seek, then explicitly select up to three stills. Review each still independently through the existing image extraction and confirmation flow. Only the chosen still is sent to AI: events between frames can be missed, and the audio track is not analysed. Playback positions are approximate selection references, not verified event timestamps or quotes. Repeated products across frames require separate human decisions and the existing order overlap checks.
+
+Before confirmation, video/frame drafts stay in bounded server memory for up to 30 minutes (temporary decoding files are removed). Saving a reviewed frame also saves the original video in a separate additive `source_videos` table and retains its relationship in review, application and attachment history. Refresh preserves confirmed source associations; unsaved frame selections are intentionally cleared. Discarding a draft does not delete confirmed history. Original video files and local database files are excluded from Git.
+
+Supply speech as a separate recording or audio file in Voice note mode. Review its AI-generated transcript and instructions independently, then explicitly attach the reviewed source to the selected order. Nothing automatically merges the inputs or changes quantities.
+
+Video file reads have a 15-second deadline, validation/frame requests a 40-second deadline, and local decoding a 30-second process deadline. Draft cleanup runs independently so a failed cleanup cannot block a new upload. A timeout displays an actionable error and releases the controls.
+
+Run focused tests with `python -m unittest -q test_video_frames.VideoFrameTests` and `node video_frames_test.cjs`. The browser fixture is `python browser_video_server.py` on port 8884; it prints a temporary synthetic-media folder and uses a temporary database with mocked image/audio responses. Stop it with Ctrl+C. It never calls a real provider.
+
 ## Catalogue
 
 Use the catalogue panel to upload a UTF-8 CSV, preview and map product name, variant and unit columns, then explicitly confirm the import. `OrderThread/sample-catalogue.csv` contains synthetic products only. Missing names and duplicate rows are rejected. Catalogue matching offers optional references during item review; it does not change quantities or imply stock availability. Limits: 256 KiB, 1,000 rows and 30 columns per import; 10,000 catalogue products. Search returns at most 200 products and review suggestions show at most five matches.
@@ -41,8 +55,9 @@ Use the catalogue panel to upload a UTF-8 CSV, preview and map product name, var
 API tests use temporary databases and mocked AI responses. Mobile audio tests generate synthetic audio and exercise real local FFmpeg conversion. Run:
 
 ```sh
-python -m unittest -q test_app test_audio test_mobile_audio test_attachments test_overlaps test_startup test_catalogue
+python -m unittest -q test_app test_audio test_mobile_audio test_attachments test_overlaps test_startup test_catalogue test_video_frames
 node recorder_test.cjs
+node video_frames_test.cjs
 ```
 
 Some inherited API tests are repeated by unittest discovery. Browser scripts require Node.js, Playwright and an installed Microsoft Edge browser. Install Playwright in a separate local tooling environment (excluded from Git), or set `PLAYWRIGHT_MODULE` to its module path. Start the corresponding `browser_*_server.py` fixture before running its browser test. Fixtures use temporary databases and synthetic/mocked data on ports 8876 through 8883; they must not be pointed at the production database. `browser_recorder_test.cjs` uses the audio fixture on 8878 and a simulated microphone.
