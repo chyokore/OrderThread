@@ -47,3 +47,7 @@ node_modules/
 # Video source files remain local
 *.mov
 *.mkv
+
+# Isolated synthetic demo sessions and evaluation observations
+.demo-runs/
+.evaluation-runs/

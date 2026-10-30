@@ -1,6 +1,31 @@
 # OrderThread
 
-A local order review prototype for text, images and voice notes. AI proposals require human correction and confirmation before saving or applying to an explicitly selected order. Separate source attachments retain review history. Potential overlapping items require an explicit repeat, addition or replacement decision. Dispatch and receipt tracking remain separate.
+Sewing-materials sellers receive order lists, corrections and pickup instructions across chat images and voice notes. A repeated list can accidentally double an order; “7 in total” can be mistaken for “7 more”; a partial dispatch can look like a completed order. OrderThread keeps the source, reviewed decisions, order changes and dispatch/receipt ledger connected.
+
+This is a local prototype: AI proposes items and transcripts; a person verifies them, saves the review, selects an order and separately confirms changes. Possible overlaps require explicit repeat, addition or replacement decisions. Instruction-only audio can be attached without inventing quantities. Nothing is automatically merged, dispatched or marked received.
+
+## Judge demonstration and evaluation
+
+Run `python demo.py` after setup for a fresh isolated database at http://127.0.0.1:8885 with a visible **SYNTHETIC JUDGE DEMO / LIVE AI** banner. It generates two labelled list images and a pickup voice script in an ignored local session folder. It does not seed orders, overwrite existing history or mock the provider. Each launch starts a fresh session; prior demo sessions remain local. Follow [DEMO.md](DEMO.md): initial blue/red zips, separate pickup recording, repeated blue zips plus new white buttons, then dispatch four blue zips.
+
+[The evaluation protocol](EVALUATION.md) and [eight labelled cases](evaluation_cases.json) distinguish expected behaviour from observations. `python evaluate.py offline` checks deterministic rules plus an explicitly mocked audio attachment workflow in temporary databases. `python evaluate.py template --mode live-ai` creates a blank local record for real provider rehearsal. No live outputs or accuracy scores are invented. See [VERIFICATION.md](VERIFICATION.md) for checks completed during preparation.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    S["Text / list image / voice / selected video still"] --> B["Browser: inspect source and request proposal"]
+    B --> P["Local Python HTTP server: validate media"]
+    P --> A["Configured Baseten or Meta API: extraction only"]
+    A --> H["Human: correct, decide, confirm review"]
+    H --> R["SQLite: source and reviewed history"]
+    R --> C["Explicit order selection + overlap comparison"]
+    C --> D["Human: repeat / add / replace + confirm"]
+    D --> L["SQLite order ledger"]
+    L --> F["Separate confirmed dispatch / receipt"]
+```
+
+Pillow validates images; bundled FFmpeg validates/converts media and extracts selected stills locally. Provider credentials stay server-side. The normal launcher uses `OrderThread/orderthread.db`; the synthetic launcher sets a unique database path before serving requests. Evaluation runs use temporary databases; observation records stay in ignored `.evaluation-runs/`.
 
 ## Layout
 
@@ -18,7 +43,18 @@ python -m venv .venv
 python -m pip install -r OrderThread/requirements.txt
 ```
 
-Copy `OrderThread/.env.example` to `OrderThread/.env.local` and enter your own provider credentials locally. Baseten uses `BASETEN_API_KEY`; Meta uses `MODEL_API_KEY`. Select an enabled model available to your account using the corresponding model variable. Model availability and provider access must be checked with your provider. Keys stay on the server. Never paste credentials into browser source, commits or screenshots.
+On a **fresh checkout only**, copy `OrderThread/.env.example` to `OrderThread/.env.local` and enter your own provider credentials locally. If `.env.local` already exists, retain it; do not copy over it. Baseten uses `BASETEN_API_KEY`; Meta uses `MODEL_API_KEY`. Select an enabled model available to your account using the corresponding model variable. Model availability and provider access must be checked with your provider. Keys stay on the server. Never paste credentials into browser source, commits or screenshots.
+
+| Provider | Local configuration | Implemented inputs |
+| --- | --- | --- |
+| Baseten | `AI_PROVIDER=baseten`, `BASETEN_API_KEY`, `BASETEN_MODEL` | Text, images, separately reviewed audio |
+| Meta Model API | `AI_PROVIDER=meta`, `MODEL_API_KEY`, `META_MODEL` | Text and images; audio disabled in this app |
+
+The example's model names are defaults in this prototype, not a promise of account entitlement. Choose a model enabled for your account and required inputs; Meta names must pass the app's supported-model validation. Environment variables already set in your shell take precedence over `.env.local`. Restart after configuration changes. A “configured” indicator checks key presence only. Network failures, unavailable models and malformed/empty responses remain errors; this app has no automatic mock fallback.
+
+Run `python check_setup.py` to check Python, installed dependencies, local FFmpeg and provider-key **presence** without printing values, opening the database or calling AI. Run `python -m pip check` to verify the installed environment. A modern browser is required; Edge/Chrome on localhost supports the demonstration recording flow subject to microphone permission. Node is needed only for JavaScript tests, and Playwright/Edge only for the older browser automation fixtures. They are not required to run the app.
+
+A new machine needs Python 3.11+, package-install network access, a provider account/key with the selected modalities enabled, provider network access/credits, and a browser. The voice demonstration also needs a working microphone or a separately recorded synthetic script. Rehearse a real image and audio request before judging; local checks cannot establish live model availability.
 
 ```sh
 python app.py
@@ -60,7 +96,7 @@ node recorder_test.cjs
 node video_frames_test.cjs
 ```
 
-Some inherited API tests are repeated by unittest discovery. Browser scripts require Node.js, Playwright and an installed Microsoft Edge browser. Install Playwright in a separate local tooling environment (excluded from Git), or set `PLAYWRIGHT_MODULE` to its module path. Start the corresponding `browser_*_server.py` fixture before running its browser test. Fixtures use temporary databases and synthetic/mocked data on ports 8876 through 8883; they must not be pointed at the production database. `browser_recorder_test.cjs` uses the audio fixture on 8878 and a simulated microphone.
+The documented command includes inherited repeated tests. New demo safety checks run with `python -m unittest -q test_demo`; labelled offline evaluations run with `python evaluate.py offline`. Browser scripts require Node.js, Playwright and an installed Microsoft Edge browser. Install Playwright in a separate local tooling environment (excluded from Git), or set `PLAYWRIGHT_MODULE` to its module path. Start the corresponding `browser_*_server.py` fixture before running its browser test. Fixtures use temporary databases and synthetic/mocked data on ports 8876 through 8883; they must not be pointed at the production database. `browser_recorder_test.cjs` uses the audio fixture on 8878 and a simulated microphone.
 
 Previously verified browser flows include review, attachments, overlap decisions, recording and catalogue import. A physical microphone and live Baseten transcription have not been verified. These tests do not establish live provider availability.
 
@@ -71,3 +107,14 @@ This repository includes application code, synthetic catalogue data and tests, n
 ## Submission
 
 The GitHub repository must stay private. Invite authorized reviewers as collaborators if they need access. Any required demo, video, deployment link or hackathon submission form is separate from publishing this source; check the event's requirements.
+
+## Current limitations and judge access
+
+- AI extraction/transcription can miss products, variants or quantities. Human corrections and explicit confirmations are required; saved reviews are not proof the AI was accurate.
+- Overlap detection uses product/variant normalization and conservative matching, not semantic proof of intent. It can miss overlaps or warn incorrectly. Missing variants may warn conservatively; record both errors in evaluation.
+- Quantities are positive whole numbers. Units are represented in item/variant text and optional catalogue references; there is no inventory, payment, customer messaging or automatic order association.
+- Replacement is blocked once a line has dispatch/receipt history. Dispatch and receipt are independently confirmed; dispatch does not imply receipt.
+- Selected-frame video review is image extraction only, with no synchronized audiovisual understanding. Unselected events may be missed; playback positions are approximate references.
+- Drafts expire after 30 minutes or a restart; refresh clears unsaved selections. Confirmed history persists in the selected local SQLite database. There is no multi-user authentication, hosted access, backup service or production hardening.
+
+The repository remains private and no deployment is included. Before judges can access it, arrange authorized collaborator access and local setup, or present a screen share from a rehearsed local synthetic session. Verify provider access, microphone and actual end-to-end outcomes; prepare separate submission/demo media if required by the event. Do not expose the local development server publicly as a judge-access shortcut.

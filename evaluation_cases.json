@@ -1,0 +1,14 @@
+{
+  "label": "SYNTHETIC sewing-materials evaluation v1; expectations only, no measured AI results",
+  "baseline": [{"name":"zips","quantity":10,"variant":"blue, 20 cm"}],
+  "cases": [
+    {"id":"repeat-and-buttons","kind":"overlap","source":"Same blue zips as before: 10 blue zips, 20 cm. Also add 2 packs of white buttons.","incoming":[{"name":"zips","quantity":10,"variant":"blue, 20 cm"},{"name":"buttons","quantity":2,"variant":"white, packs"}],"expected_warning_indexes":[0],"resolution":"repeat","expected_quantities":[10,2]},
+    {"id":"intentional-addition","kind":"overlap","source":"Add 3 more blue zips, 20 cm, to my existing order.","incoming":[{"name":"zips","quantity":3,"variant":"blue, 20 cm"}],"expected_warning_indexes":[0],"resolution":"add","expected_quantities":[13]},
+    {"id":"replacement","kind":"overlap","source":"Replace the blue 20 cm zip quantity with 7 in total, not 7 more.","incoming":[{"name":"zips","quantity":7,"variant":"blue, 20 cm"}],"expected_warning_indexes":[0],"resolution":"replace","expected_quantities":[7]},
+    {"id":"different-colour","kind":"overlap","source":"Also order 3 red zips, 20 cm.","incoming":[{"name":"zips","quantity":3,"variant":"red, 20 cm"}],"expected_warning_indexes":[],"expected_quantities":[10,3]},
+    {"id":"different-length","kind":"overlap","source":"Also order 3 blue zips, 30 cm.","incoming":[{"name":"zips","quantity":3,"variant":"blue, 30 cm"}],"expected_warning_indexes":[],"expected_quantities":[10,3]},
+    {"id":"unclear-quantity","kind":"unclear","source":"Please add some blue zips, 20 cm. I have not decided how many.","incoming":[{"name":"zips","quantity":null,"variant":"blue, 20 cm"}],"expected_warning_indexes":null,"expected":"Reject confirmation while quantity is unresolved; do not invent a number or change the baseline."},
+    {"id":"separate-pickup","kind":"pickup","source":"I have sent the list. I will pick it up tomorrow. Please keep the same quantities.","expected_warning_indexes":null,"expected":"Separate reviewed audio source with no items; explicit attachment preserves pickup instruction and ordered quantity 10; no dispatch or receipt."},
+    {"id":"partial-dispatch","kind":"dispatch","source":"Dispatch 4 of the 10 blue 20 cm zips. Receipt has not been confirmed.","expected_warning_indexes":null,"expected":{"ordered":10,"dispatched":4,"outstanding_dispatch":6,"received":0}}
+  ]
+}
