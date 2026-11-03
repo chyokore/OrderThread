@@ -104,9 +104,23 @@ Previously verified browser flows include review, attachments, overlap decisions
 
 This repository includes application code, synthetic catalogue data and tests, not customer orders, uploads, recordings, credentials, database files, logs or local investigation notes. Keep private backups separately. The local development server has no user authentication and is intended for a trusted local machine. Deploying it requires an appropriate authenticated hosting setup, HTTPS, protected credentials and a data backup policy.
 
+## Hosted synthetic demo
+
+The [public OrderThread demo](https://orderthread-1.onrender.com) opens without a sign-in. Use synthetic data only. Live review sends the chosen source to Baseten and requires an available shared AI attempt. The hosted text, image, voice-note and selected video-frame reviews were tested with live requests.
+
+Try **Use example** for a synthetic order. Compare the proposal with the source, resolve any overlap, and save the reviewed decisions. Choose an order and confirm applying the changes separately. Applying a saved review uses no further AI attempt.
+
+**AI review of a selected video frame** accepts MP4, MOV or WebM up to 10 seconds and 1 MiB. Select a readable still, then review it. Baseten receives the selected still. Use Voice note to review audio separately.
+
+The demo uses temporary workspaces on Render Free. Orders and uploads can reset after workspace inactivity, a restart, redeployment or spin-down. Workspace capacity is limited. A Cloudflare D1 counter reserves one shared attempt before each Baseten call and blocks inference when exhausted or unavailable. Failed requests may consume a slot. Baseten credit coverage and charges depend on the account and model.
+
+For local setup, install `OrderThread/requirements.txt` and run `python demo.py` for an isolated synthetic workspace. See [DEMO.md](DEMO.md) for sample scenarios. Configure a provider privately using `OrderThread/.env.example` as a template for `OrderThread/.env.local`.
+
+For the public hosted configuration, use `Dockerfile.public`, set `DEMO_ORIGIN` to the service's HTTPS origin without a trailing slash, and enter `D1_ACCOUNT_ID`, `D1_DATABASE_ID`, `D1_API_TOKEN`, `BASETEN_MODEL` and `BASETEN_API_KEY` in the host's environment settings. Initialize the dedicated counter with [public_ai_budget.sql](public_ai_budget.sql), which starts at zero. Use the standard `Dockerfile` for the separate password-protected fixture service with fixed synthetic examples.
+
 ## Submission
 
-The GitHub repository must stay private. Invite authorized reviewers as collaborators if they need access. Any required demo, video, deployment link or hackathon submission form is separate from publishing this source; check the event's requirements.
+Keep credentials, databases, customer data and recordings outside the repository. The source repository, hosted demo and demo video are separate submission links.
 
 ## Current limitations and judge access
 
