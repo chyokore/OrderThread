@@ -18,7 +18,7 @@ class ThreadingHTTPServer(BaseThreadingHTTPServer):
 
 
 ROOT = Path(__file__).resolve().parent
-for line in (ROOT / '.env.local').read_text(encoding='utf-8-sig').splitlines() if (ROOT / '.env.local').exists() else []:
+for line in (ROOT / '.env.local').read_text(encoding='utf-8-sig').splitlines() if os.getenv('ORDERTHREAD_HOSTED') != '1' and (ROOT / '.env.local').exists() else []:
     if '=' in line and not line.lstrip().startswith('#'):
         k, v = line.split('=', 1); os.environ.setdefault(k.strip(), v.strip().strip('"\''))
 DB = ROOT / 'orderthread.db'

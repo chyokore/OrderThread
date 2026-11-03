@@ -1,0 +1,2 @@
+-r OrderThread/requirements.txt
+waitress==3.0.2

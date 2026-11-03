@@ -1,0 +1,13 @@
+**
+!Dockerfile
+!requirements-hosted.txt
+!hosted.py
+!OrderThread/
+OrderThread/**
+!OrderThread/requirements.txt
+!OrderThread/app.py
+!OrderThread/index.html
+!OrderThread/recorder.js
+!OrderThread/video-frames.js
+!OrderThread/catalogue.js
+!OrderThread/sample-catalogue.csv
