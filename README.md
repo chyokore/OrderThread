@@ -1,8 +1,26 @@
 # OrderThread
 
-Sewing-materials sellers receive order lists, corrections and pickup instructions across chat images and voice notes. A repeated list can accidentally double an order; “7 in total” can be mistaken for “7 more”; a partial dispatch can look like a completed order. OrderThread keeps the source, reviewed decisions, order changes and dispatch/receipt ledger connected.
+A customer sends an order list to a sewing-materials seller. Later, another list arrives with some of the same items. Should the seller leave the original order alone, add more items, or replace part of the order?
 
-This is a local prototype: AI proposes items and transcripts; a person verifies them, saves the review, selects an order and separately confirms changes. Possible overlaps require explicit repeat, addition or replacement decisions. Instruction-only audio can be attached without inventing quantities. Nothing is automatically merged, dispatched or marked received.
+OrderThread keeps the source beside the AI proposal and flags possible overlaps with an existing order. If the intent is unclear, the seller asks the customer outside OrderThread and records what they confirm. The seller can correct the proposal, save the review, and separately confirm what changes on the order.
+
+Say the first order has **10 blue zips, 20 cm**. A follow-up lists those same **10 blue zips** alongside **two packs of white buttons**. If the customer confirms the zips are a repeat, the seller keeps the quantity at 10 and adds the buttons separately.
+
+After confirmation, the seller can record a partial dispatch and later record receipt as a separate action. The order history keeps the reviewed sources and decisions together. Catalogue matches give the seller product references while reviewing an item.
+
+[Open the public OrderThread demo](https://orderthread-1.onrender.com/). Use synthetic data and select **Use example** to start with a sample message. Live reviews require a slot in the shared AI allowance.
+
+## What OrderThread can review
+
+The hosted demo uses Meta’s **Muse Spark Open** through **Baseten** (`meta-models/muse-spark-open-1026`) to extract proposals from these inputs:
+
+- **Text and order-list images.** Paste a message or upload a list image to propose items and quantities.
+- **Voice notes.** Record or upload audio to get a transcript and proposed items or instructions, such as a pickup note.
+- **Selected video frames.** Choose a still from a video and send that still for AI image review. Review any speech separately in **Voice note**.
+
+In the local app, **CSV catalogue documents** follow a separate import workflow. Preview the rows, map the product columns, and confirm the import. Catalogue matches give the seller optional references during review. Order quantities change through order confirmation, and stock availability is outside the catalogue’s scope.
+
+The seller checks each proposal against its source, asks the customer outside the app when intent is unclear, and explicitly confirms changes. Bring in messages or media manually from channels such as WhatsApp, Instagram or Messenger.
 
 ## Judge demonstration and evaluation
 
@@ -29,7 +47,7 @@ Pillow validates images; bundled FFmpeg validates/converts media and extracts se
 
 ## Layout
 
-Run the outer `app.py` launcher. The canonical server and browser assets are in `OrderThread/`: `app.py`, `index.html`, `recorder.js` and `catalogue.js`. The older outer HTML page is retained locally but is not served or distributed. No files need moving or deleting.
+Run the outer `app.py` launcher. The canonical server and browser assets are in `OrderThread/`: `app.py`, `index.html`, `recorder.js`, `video-frames.js` and `catalogue.js`. The older outer HTML page is retained locally but is not served or distributed. No files need moving or deleting.
 
 ## Setup
 
@@ -64,13 +82,13 @@ Open http://127.0.0.1:8765. Stop an existing server with Ctrl+C before restartin
 
 ## Audio and review
 
-Uploads and in-app recordings are limited to 60 seconds and 5 MiB. The server validates content, format and duration. WAV follows the existing direct path; supported phone formats use FFmpeg supplied by `imageio-ffmpeg`. The dependency must provide an executable supported on your machine; unreadable files or failed conversion produce an error. Renaming an extension does not convert a recording. Browser recording requires microphone permission and a secure context: localhost for development, HTTPS for deployment on phones. File upload remains available when recording is unsupported.
+In the local app, uploads and in-app recordings are limited to 60 seconds and 5 MiB. The server validates content, format and duration. WAV follows the existing direct path; supported phone formats use FFmpeg supplied by `imageio-ffmpeg`. The dependency must provide an executable supported on your machine; unreadable files or failed conversion produce an error. Renaming an extension does not convert a recording. Browser recording requires microphone permission and a secure context: localhost for development, HTTPS for deployment on phones. File upload remains available when recording is unsupported.
 
 Transcripts are AI-generated and audio remains identified as the source. Instruction-only notes can be reviewed and attached to an explicitly selected order without inventing items or requiring quantities. Nothing changes automatically.
 
 ## Video frame review
 
-Choose **Video frame review** to upload MP4, MOV or WebM video up to 60 seconds, 20 MiB and 4K. H.264 MP4 gives the broadest browser playback support. H.264/H.265, VP8/VP9 and AV1 tracks are validated locally through the existing `imageio-ffmpeg` dependency. No additional hosted video service is used.
+In the local app, choose **Video frame review** to upload MP4, MOV or WebM video up to 60 seconds, 20 MiB and 4K. H.264 MP4 gives the broadest browser playback support. H.264/H.265, VP8/VP9 and AV1 tracks are validated locally through the existing `imageio-ffmpeg` dependency. No additional hosted video service is used.
 
 Play, pause or seek, then explicitly select up to three stills. Review each still independently through the existing image extraction and confirmation flow. Only the chosen still is sent to AI: events between frames can be missed, and the audio track is not analysed. Playback positions are approximate selection references, not verified event timestamps or quotes. Repeated products across frames require separate human decisions and the existing order overlap checks.
 
@@ -98,7 +116,7 @@ node video_frames_test.cjs
 
 The documented command includes inherited repeated tests. New demo safety checks run with `python -m unittest -q test_demo`; labelled offline evaluations run with `python evaluate.py offline`. Browser scripts require Node.js, Playwright and an installed Microsoft Edge browser. Install Playwright in a separate local tooling environment (excluded from Git), or set `PLAYWRIGHT_MODULE` to its module path. Start the corresponding `browser_*_server.py` fixture before running its browser test. Fixtures use temporary databases and synthetic/mocked data on ports 8876 through 8883; they must not be pointed at the production database. `browser_recorder_test.cjs` uses the audio fixture on 8878 and a simulated microphone.
 
-Previously verified browser flows include review, attachments, overlap decisions, recording and catalogue import. A physical microphone and live Baseten transcription have not been verified. These tests do not establish live provider availability.
+Previously verified browser flows include review, attachments, overlap decisions, recording and catalogue import. These browser tests use simulated inputs. A hosted live voice-note review was reported successful separately. The microphone path on a specific device depends on browser support and permissions.
 
 ## Data and deployment
 
@@ -106,29 +124,28 @@ This repository includes application code, synthetic catalogue data and tests, n
 
 ## Hosted synthetic demo
 
-The [public OrderThread demo](https://orderthread-1.onrender.com) opens without a sign-in. Use synthetic data only. Live review sends the chosen source to Baseten and requires an available shared AI attempt. The hosted text, image, voice-note and selected video-frame reviews were tested with live requests.
+Hosted text, image, voice-note and selected video-frame reviews were tested with live Baseten requests. The hosted video upload limit is **10 seconds and 1 MiB** for MP4, MOV or WebM. The public server caps request bodies and outgoing AI payloads at **2 MiB**, including JSON and base64 encoding, so hosted image and audio files may need to be smaller than the local limits.
 
-Try **Use example** for a synthetic order. Compare the proposal with the source, resolve any overlap, and save the reviewed decisions. Choose an order and confirm applying the changes separately. Applying a saved review uses no further AI attempt.
+Each browser gets a temporary workspace. The service supports up to **16 workspaces per process**, and clears inactive workspaces after **30 minutes** when processing a subsequent workspace request. Orders and uploads can also disappear on restart, redeployment or Render Free spin-down.
 
-**AI review of a selected video frame** accepts MP4, MOV or WebM up to 10 seconds and 1 MiB. Select a readable still, then review it. Baseten receives the selected still. Use Voice note to review audio separately.
+The AI allowance is shared across visitors. Cloudflare D1 reserves one attempt before each Baseten call. When the allowance is exhausted or D1 is unavailable, the app stops before calling Baseten. Failed requests and timeouts can consume a slot. Applying a saved review uses no further AI attempt. Baseten credit coverage and actual charges remain unconfirmed.
 
-The demo uses temporary workspaces on Render Free. Orders and uploads can reset after workspace inactivity, a restart, redeployment or spin-down. Workspace capacity is limited. A Cloudflare D1 counter reserves one shared attempt before each Baseten call and blocks inference when exhausted or unavailable. Failed requests may consume a slot. Baseten credit coverage and charges depend on the account and model.
+### Deploy the hosted demo
 
-For local setup, install `OrderThread/requirements.txt` and run `python demo.py` for an isolated synthetic workspace. See [DEMO.md](DEMO.md) for sample scenarios. Configure a provider privately using `OrderThread/.env.example` as a template for `OrderThread/.env.local`.
-
-For the public hosted configuration, use `Dockerfile.public`, set `DEMO_ORIGIN` to the service's HTTPS origin without a trailing slash, and enter `D1_ACCOUNT_ID`, `D1_DATABASE_ID`, `D1_API_TOKEN`, `BASETEN_MODEL` and `BASETEN_API_KEY` in the host's environment settings. Initialize the dedicated counter with [public_ai_budget.sql](public_ai_budget.sql), which starts at zero. Use the standard `Dockerfile` for the separate password-protected fixture service with fixed synthetic examples.
+- Use a Render **Docker** web service with `./Dockerfile.public` from the repository root. Set `DEMO_ORIGIN` to the service’s HTTPS origin without a trailing slash. The server uses the host’s `PORT` and exposes `/healthz`.
+- Initialize a dedicated Cloudflare D1 database with [public_ai_budget.sql](public_ai_budget.sql). It starts with zero attempts. Set `D1_ACCOUNT_ID`, `D1_DATABASE_ID` and `D1_API_TOKEN` privately in the host environment. The token needs D1 write access to reserve attempts.
+- Set `BASETEN_MODEL` to `meta-models/muse-spark-open-1026` and set `BASETEN_API_KEY` privately in the host environment. Verify that a review is blocked at zero allowance before opening a limited judging allowance.
+- Use the standard `./Dockerfile` for the separate password-protected fixture service. Set its own `DEMO_ORIGIN` and a `DEMO_PASSWORD` of at least 24 characters. Sign in as `judge`. It uses fixed synthetic examples and needs no provider credentials.
 
 ## Submission
 
 Keep credentials, databases, customer data and recordings outside the repository. The source repository, hosted demo and demo video are separate submission links.
 
-## Current limitations and judge access
+## Current limitations
 
 - AI extraction/transcription can miss products, variants or quantities. Human corrections and explicit confirmations are required; saved reviews are not proof the AI was accurate.
 - Overlap detection uses product/variant normalization and conservative matching, not semantic proof of intent. It can miss overlaps or warn incorrectly. Missing variants may warn conservatively; record both errors in evaluation.
 - Quantities are positive whole numbers. Units are represented in item/variant text and optional catalogue references; there is no inventory, payment, customer messaging or automatic order association.
 - Replacement is blocked once a line has dispatch/receipt history. Dispatch and receipt are independently confirmed; dispatch does not imply receipt.
 - Selected-frame video review is image extraction only, with no synchronized audiovisual understanding. Unselected events may be missed; playback positions are approximate references.
-- Drafts expire after 30 minutes or a restart; refresh clears unsaved selections. Confirmed history persists in the selected local SQLite database. There is no multi-user authentication, hosted access, backup service or production hardening.
-
-The repository remains private and no deployment is included. Before judges can access it, arrange authorized collaborator access and local setup, or present a screen share from a rehearsed local synthetic session. Verify provider access, microphone and actual end-to-end outcomes; prepare separate submission/demo media if required by the event. Do not expose the local development server publicly as a judge-access shortcut.
+- Drafts expire after 30 minutes or a restart; refresh clears unsaved selections. Confirmed history persists in the selected local SQLite database. The public demo keeps separate temporary workspaces through browser cookies.
