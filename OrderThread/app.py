@@ -787,7 +787,7 @@ def video_process(content, suffix, position=None):
             if position is not None: args += ['-ss', str(position)]
             args += ['-i', str(path), '-map', '0:v:0', '-an', '-sn', '-dn']
             if position is None:
-                args += ['-t', '61', '-vf', 'scale=640:-2', '-progress', 'pipe:1', '-f', 'null', '-']
+                args += ['-t', str(MAX_VIDEO_SECONDS + 1), '-vf', 'scale=640:-2', '-progress', 'pipe:1', '-f', 'null', '-']
             else:
                 args += ['-frames:v', '1', '-vf', "scale=w='min(1280,iw)':h='min(1280,ih)':force_original_aspect_ratio=decrease", '-f', 'image2pipe', '-vcodec', 'png', '-threads', '1', '-']
             result = subprocess.run(args, capture_output=True, timeout=30)
@@ -807,10 +807,11 @@ def video_upload(video):
     if mime not in ('', 'application/octet-stream', 'video/mp4', 'video/quicktime', 'video/webm'):
         raise ValueError('Unsupported declared video type. Choose MP4, MOV or WebM.')
     encoded = video.get('base64')
-    if not isinstance(encoded, str) or len(encoded)>4*((MAX_VIDEO_BYTES+2)//3): raise ValueError('Video must be nonempty and at most 20 MiB.')
+    size_error = f'Video must be nonempty and at most {MAX_VIDEO_BYTES // (1024 * 1024)} MiB.'
+    if not isinstance(encoded, str) or len(encoded)>4*((MAX_VIDEO_BYTES+2)//3): raise ValueError(size_error)
     try: content = base64.b64decode(encoded, validate=True)
     except Exception: raise ValueError('Video data is invalid.') from None
-    if not 0<len(content)<=MAX_VIDEO_BYTES: raise ValueError('Video must be nonempty and at most 20 MiB.')
+    if not 0<len(content)<=MAX_VIDEO_BYTES: raise ValueError(size_error)
     if content[4:8]==b'ftyp':
         detected = 'mov' if content[8:12]==b'qt  ' else 'mp4'
     elif content[:4]==bytes.fromhex('1a45dfa3') and b'webm' in content[:4096]: detected = 'webm'
@@ -825,7 +826,7 @@ def video_upload(video):
     seconds = int(duration[1])*3600 + int(duration[2])*60 + float(duration[3])
     decoded_seconds = max(int(t) for t in times)/1_000_000
     if not 0<seconds<=MAX_VIDEO_SECONDS or decoded_seconds>MAX_VIDEO_SECONDS+.05:
-        raise ValueError('Video must be at most 60 seconds. Trim it before uploading.')
+        raise ValueError(f'Video must be at most {MAX_VIDEO_SECONDS} seconds. Trim it before uploading.')
     if stream[1] not in ('h264','hevc','vp8','vp9','av1') or int(stream[2])*int(stream[3])>3840*2160:
         raise ValueError('Use H.264/H.265, VP8/VP9 or AV1 video, at most 4K.')
     # Reject streams with misleading duration headers or incomplete decoding.

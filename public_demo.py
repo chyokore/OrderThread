@@ -20,6 +20,11 @@ from public_ai_completion import guarded_completion
 class LiveWorkspace(HostedDemo):
     fixture_page = False
 
+    def __init__(self, directory, origin, password):
+        super().__init__(directory, origin, password)
+        self.app.MAX_VIDEO_BYTES = 1024 * 1024
+        self.app.MAX_VIDEO_SECONDS = 10
+
 
 class PublicDemo:
     idle_seconds = 1800
@@ -48,7 +53,7 @@ class PublicDemo:
             return reply('200 OK', b'OK')
         if env.get('HTTP_HOST') != urlsplit(self.origin).netloc:
             return reply('400 Bad Request', b'Unexpected host.')
-        if path in ('/api/video-preview', '/api/video-frame', '/api/catalogue/preview'):
+        if path == '/api/catalogue/preview':
             return reply('403 Forbidden', b'Unavailable in the public demo.')
         try:
             cookie = SimpleCookie(env.get('HTTP_COOKIE', '')).get('__Host-orderthread')
@@ -92,7 +97,8 @@ class PublicDemo:
             body = body.replace(b'<main>', b'<main><aside class="notice"><strong>Demo &middot; Live AI</strong>'
                 b' &mdash; Use synthetic data only. Reviews send input to Baseten. '
                 b'Orders and uploads can reset after 30 minutes idle or when the service restarts.</aside>', 1)
-            body = body.replace(b'<option value="video">', b'<option disabled value="video">')
+            body = body.replace(b'Video frame review</', b'AI review of a selected video frame</')
+            body = body.replace(b'up to 60 seconds, 20 MiB and 4K', b'up to 10 seconds, 1 MiB and 4K')
             headers = [(k, v) for k, v in headers if k.lower() != 'content-length']
             headers.append(('Content-Length', str(len(body))))
             if new_session:
