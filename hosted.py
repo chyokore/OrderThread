@@ -23,6 +23,8 @@ AI_PATHS = {'/api/propose', '/api/propose-image', '/api/propose-audio'}
 
 
 class HostedDemo:
+    fixture_page = True
+
     def __init__(self, data_dir, origin, password, ai_budget=None):
         parsed = urlsplit(origin)
         if parsed.scheme != 'https' or not parsed.netloc or parsed.path or parsed.query or parsed.fragment or parsed.username:
@@ -173,9 +175,9 @@ class HostedDemo:
             def log_message(self, *args):
                 pass
             def reply(self, status, body, typ='application/json; charset=utf-8'):
-                if status >= 500:
+                if status >= 500 and not (status == 502 and not outer.fixture_page):
                     body = {'error': 'Demo service unavailable. Check with the presenter; no automatic retry was made.'}
-                if typ.startswith('text/html'):
+                if typ.startswith('text/html') and outer.fixture_page:
                     body = body.replace('<main>', '<main><aside role="note" class="notice"><strong>SHARED SYNTHETIC DEMO / NO LIVE AI</strong> — Invented data only. Judges share this workspace; another judge may change it. Human confirmation is required. Orders and uploaded media stored locally can be lost on restart, redeploy or idle spin-down. Recreate with: SYNTHETIC: 10 blue zips; then SYNTHETIC: add 5 blue zips. These are fixed text fixtures, not AI extraction. Image/audio AI is disabled.</aside>', 1)
                     body = body.replace('1. Add text, an image, a voice note or selected video frames', '1. Review a synthetic text script')
                     body = body.replace('Use synthetic or anonymised sources. Text, uploaded images or separately supplied audio are sent to the selected AI provider for extraction. In Video frame review, only the selected still image is sent. Text requests also include confirmed history.', 'Use only the two published synthetic scripts. Proposals are fixed fixtures; no source or history is sent to an AI provider.')

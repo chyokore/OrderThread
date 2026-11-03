@@ -1,0 +1,17 @@
+**
+!Dockerfile
+!requirements-hosted.txt
+!hosted.py
+!OrderThread/
+OrderThread/**
+!OrderThread/requirements.txt
+!OrderThread/app.py
+!OrderThread/index.html
+!OrderThread/recorder.js
+!OrderThread/video-frames.js
+!OrderThread/catalogue.js
+!OrderThread/sample-catalogue.csv
+!Dockerfile.public
+!public_demo.py
+!public_ai_budget.py
+!public_ai_completion.py

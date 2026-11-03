@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+WORKDIR /app
+COPY OrderThread/requirements.txt OrderThread/requirements.txt
+COPY requirements-hosted.txt .
+RUN pip install --no-cache-dir -r requirements-hosted.txt
+COPY OrderThread/app.py OrderThread/index.html OrderThread/recorder.js OrderThread/video-frames.js OrderThread/catalogue.js OrderThread/sample-catalogue.csv OrderThread/
+COPY hosted.py public_demo.py public_ai_budget.py public_ai_completion.py .
+ENV ORDERTHREAD_HOSTED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+EXPOSE 10000
+CMD ["python", "public_demo.py"]
