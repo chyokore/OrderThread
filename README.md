@@ -1,14 +1,18 @@
 # OrderThread
 
-A customer sends an order list to a sewing-materials seller. Later, another list arrives with some of the same items. Should the seller leave the original order alone, add more items, or replace part of the order?
+[**Watch the demo**](https://youtu.be/iuNMZKoTjfw) · [**Try the public app**](https://orderthread-1.onrender.com/)
 
-OrderThread keeps the source beside the AI proposal and flags possible overlaps with an existing order. If the intent is unclear, the seller asks the customer outside OrderThread and records what they confirm. The seller can correct the proposal, save the review, and separately confirm what changes on the order.
+A customer sends an order list to a sewing-materials seller, then sends another list with some of the same items. Does the customer mean a repeat, an addition, or a replacement? The seller needs to settle that before changing the order.
+
+OrderThread keeps the original source beside the AI proposal and flags possible overlaps with an existing order. The seller checks the details and confirms whether each overlapping item is a repeat, an addition, or a replacement. When intent is unclear, the seller asks the customer outside OrderThread and records what they confirm. Saving a review and applying its changes to an order require separate confirmations.
 
 Say the first order has **10 blue zips, 20 cm**. A follow-up lists those same **10 blue zips** alongside **two packs of white buttons**. If the customer confirms the zips are a repeat, the seller keeps the quantity at 10 and adds the buttons separately.
 
 After confirmation, the seller can record a partial dispatch and later record receipt as a separate action. The order history keeps the reviewed sources and decisions together. Catalogue matches give the seller product references while reviewing an item.
 
-[Open the public OrderThread demo](https://orderthread-1.onrender.com/). Use synthetic data and select **Use example** to start with a sample message. Live reviews require a slot in the shared AI allowance.
+To try the public app, select **Use example**, then **Review message**. Compare the proposal with the sample, save the reviewed decisions, and select an order before confirming its changes. Use synthetic data only. Each live AI review uses one slot in the shared allowance; an exhausted allowance blocks new reviews.
+
+For a guided run, follow the [demo walkthrough](DEMO.md). The [evaluation protocol](EVALUATION.md) and [eight labelled cases](evaluation_cases.json) cover repeats, additions, replacements, variants, unclear quantities, pickup instructions and partial dispatch. Offline checks exercise confirmation, overlap and ledger rules with hand-authored proposals. The pickup case uses mocked AI with synthetic silence to test attachment and unchanged quantities. These checks measure application behaviour, not AI extraction or transcription accuracy.
 
 ## What OrderThread can review
 
